@@ -33,8 +33,8 @@ namespace MineSweeper
             var area = new int[fields];
 
             //randomly place bombs
-            RandomlyPlaceBombsInFields(ref area, bombs);
-            AddBombCountToFields(ref area, rows, columns, bombs);
+            int[] bombpositions = RandomlyPlaceBombsInFields(ref area, bombs);
+            AddBombCountToFields(ref area, bombpositions, rows, columns, bombs);
 
             //write out array to console
             //nested for loops for drawing rows and columns
@@ -60,47 +60,34 @@ namespace MineSweeper
             Console.ReadKey();
         }
 
-        static void AddBombCountToFields(ref int[] area, int rows, int columns, int bombs)
+        static void AddBombCountToFields(ref int[] area, int[] bombPositions, int rows, int columns, int bombs)
         {
-            int numberOfBombsFound = 0;
-
-            // loop rows
-            for (int r = 0; r < rows; r++)
+            // loop bomb positions to be able to add hints
+            foreach (int pos in bombPositions)
             {
-                // loop columns
-                for (int c = 0; c < columns; c++)
+                //the position is the place in the array where the bomb has been placed.
+                //the integer resulting from dividing by number of columns gives you its row number
+                //the column number is position less row number times total rows
+
+                int r = pos / columns;
+                int c = pos - (r * rows);
+
+                //mini-loop the surrounding fields
+                int prevRow = (r - 1 < 0) ? r : (r - 1);
+                int prevCol = (c - 1 < 0) ? c : (c - 1);
+                int nextRow = (r + 1 >= rows) ? r : (r + 1);
+                int nextCol = (c + 1 >= columns) ? c : (c + 1);
+
+                for (int i = prevRow; i <= nextRow; i++)
                 {
-                    // current field number 
-                    int p = (r * rows) + c;
-
-                    // get the field's value
-                    int f = area[p];
-
-                    // if this field has a bomb, each field in the vicinity which is not itself a bomb, get a +1 to their value
-                    if (f == -1)
+                    for (int j = prevCol; j <= nextCol; j++)
                     {
-                        numberOfBombsFound++;
-
-                        //mini-loop the surrounding fields
-                        int prevRow = (r - 1 < 0) ? r : (r - 1);
-                        int prevCol = (c - 1 < 0) ? c : (c - 1);
-                        int nextRow = (r + 1 >= rows) ? r : (r + 1);
-                        int nextCol = (c + 1 >= columns) ? c : (c + 1);
-
-                        for (int i = prevRow; i <= nextRow; i++)
-                        {
-                            for (int j = prevCol; j <= nextCol; j++)
-                            {
-                                int m = (i * rows) + j;
-                                if (area[m] >= 0)
-                                    area[m]++;
-                            }
-                        }
-                        //when you found all bombs, just bail
-                        if (numberOfBombsFound == bombs)
-                            return;
+                        int m = (i * rows) + j;
+                        if (area[m] >= 0)
+                            area[m]++;
                     }
                 }
+
             }
         }
 
@@ -110,8 +97,9 @@ namespace MineSweeper
         /// </summary>
         /// <param name="area"></param>
         /// <param name="bombs"></param>
-        static void RandomlyPlaceBombsInFields(ref int[] area, int bombs)
+        static int[] RandomlyPlaceBombsInFields(ref int[] area, int bombs)
         {
+            int[] bombPositions = new int[bombs];
             Random r = new Random(DateTime.Now.Millisecond);
             for (int i = 0; i < bombs; i++)
             {
@@ -121,9 +109,12 @@ namespace MineSweeper
                 if (area[b] == -1)
                     i--;
                 else
+                {
                     area[b] = -1;
+                    bombPositions[i] = b;
+                }
             }
-            
+            return bombPositions;            
         }
     }
 }
